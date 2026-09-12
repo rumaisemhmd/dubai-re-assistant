@@ -64,6 +64,37 @@ public API can evolve independently.
 
 5. Verify the API is up: `GET /api/health/` → `{"status": "ok"}`
 
+## Ingesting documents
+
+`ingest_pdfs` extracts text from every PDF in a folder, splits it into
+overlapping chunks, embeds each chunk with OpenAI, and stores the
+results as `Document`/`DocumentChunk` rows:
+
+```
+python manage.py ingest_pdfs path/to/folder \
+  --source-type rera_regulation \
+  --language en
+```
+
+- `--source-type` — `rera_regulation` (default) or `dld_dataset`.
+- `--language` — `en` (default) or `ar`.
+- `--chunk-size` / `--chunk-overlap` — approximate tokens per chunk and
+  the overlap between consecutive chunks (defaults: 500 / 50). Sizes
+  are approximated at ~4 characters per token rather than an exact
+  tokenizer — `tiktoken` needs a Rust toolchain to build on this
+  project's Python version, which isn't worth the added system
+  dependency here.
+- `--reingest` — replace an existing `Document` with the same title
+  and source type instead of skipping it.
+- A PDF is matched to an existing `Document` by filename (its stem) +
+  `--source-type`; re-running without `--reingest` skips PDFs already
+  ingested.
+- Scanned/image-only PDFs with no extractable text are skipped with a
+  warning.
+
+This command only handles PDFs. Ingesting DLD open data (CSV/JSON,
+not PDF) will need a separate command.
+
 ## Running tests
 
 ```
@@ -82,9 +113,9 @@ pytest
 
 ## Status
 
-This is the project skeleton: Django project structure, app layout,
-data models for ingested documents, and a health-check API endpoint.
-Agent logic (retrieval, calculation, compliance-checking, report
-generation) and the ingestion pipeline are not implemented yet.
+Django project structure, data models, a health-check API endpoint,
+and a PDF ingestion pipeline (`ingest_pdfs`) are in place. DLD open
+data ingestion (non-PDF) and all agent logic (retrieval, calculation,
+compliance-checking, report generation) are not implemented yet.
 DRF defaults to `IsAuthenticated` (session auth); only `/api/health/`
 is explicitly public, for deployment monitoring.
