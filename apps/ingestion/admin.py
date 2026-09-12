@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Document, DocumentChunk
+from .models import Document, DocumentChunk, Transaction
 
 
 @admin.register(Document)
@@ -15,3 +15,10 @@ class DocumentChunkAdmin(admin.ModelAdmin):
     list_display = ("document", "chunk_index", "language", "token_count")
     list_filter = ("language",)
     search_fields = ("content",)
+
+
+@admin.register(Transaction)
+class TransactionAdmin(admin.ModelAdmin):
+    list_display = ("transaction_number", "area", "property_type", "transaction_value", "instance_date")
+    list_filter = ("property_type", "is_offplan", "is_freehold", "area")
+    search_fields = ("transaction_number", "area", "master_project", "project")

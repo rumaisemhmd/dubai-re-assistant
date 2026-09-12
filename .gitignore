@@ -19,6 +19,9 @@ media/
 # Environment variables
 .env
 
+# Raw source data for ingestion (large, not for redistribution)
+/data/
+
 # Testing
 .pytest_cache/
 .coverage

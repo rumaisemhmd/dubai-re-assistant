@@ -11,6 +11,7 @@ from django.db import transaction
 from pypdf import PdfReader
 
 from apps.ingestion.embeddings import embed_texts
+from apps.ingestion.language import detect_language
 from apps.ingestion.models import Document, DocumentChunk
 from apps.ingestion.text_chunking import chunk_text
 
@@ -32,8 +33,12 @@ class Command(BaseCommand):
         parser.add_argument(
             "--language",
             choices=Document.Language.values,
-            default=Document.Language.ENGLISH,
-            help="Document.language for every ingested PDF (default: en).",
+            default=None,
+            help=(
+                "Force Document.language for every ingested PDF. If omitted, "
+                "language is auto-detected per PDF from its extracted text "
+                "(Arabic script density), since a folder may mix languages."
+            ),
         )
         parser.add_argument("--chunk-size", type=int, default=500, help="Approx. tokens per chunk (default: 500).")
         parser.add_argument("--chunk-overlap", type=int, default=50, help="Approx. token overlap between chunks (default: 50).")
@@ -63,7 +68,6 @@ class Command(BaseCommand):
 
     def _ingest_one(self, pdf_path, options):
         source_type = options["source_type"]
-        language = options["language"]
         title = pdf_path.stem
 
         if Document.objects.filter(title=title, source_type=source_type).exists() and not options["reingest"]:
@@ -79,6 +83,9 @@ class Command(BaseCommand):
                 f"Skipping {pdf_path.name} — no extractable text (likely a scanned/image PDF)."
             ))
             return
+
+        language = options["language"] or detect_language(raw_text)
+        self.stdout.write(f"  Detected language: {language}" if not options["language"] else f"  Language: {language} (forced)")
 
         chunks = chunk_text(raw_text, chunk_size=options["chunk_size"], chunk_overlap=options["chunk_overlap"])
         if not chunks:

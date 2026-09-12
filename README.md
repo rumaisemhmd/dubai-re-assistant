@@ -91,9 +91,32 @@ python manage.py ingest_pdfs path/to/folder \
   ingested.
 - Scanned/image-only PDFs with no extractable text are skipped with a
   warning.
+- `--language` is optional: if omitted, each PDF's language is
+  auto-detected from its extracted text (Arabic script density), since
+  a folder commonly mixes English and Arabic documents. Pass
+  `--language` to force one language for the whole batch instead.
+- **Known limitation:** a minority of older bilingual PDFs (e.g. RERA
+  circulars) embed Arabic text with a custom font that has no proper
+  Unicode mapping — their English content extracts fine, but the
+  Arabic portions come out as garbled text regardless of extraction
+  library (verified against both `pypdf` and `pymupdf`). Recovering
+  those would need OCR, which is out of scope for this command.
 
-This command only handles PDFs. Ingesting DLD open data (CSV/JSON,
-not PDF) will need a separate command.
+`ingest_dld_transactions` loads Dubai Land Department open-data
+transaction CSVs into a structured `Transaction` table — not
+`DocumentChunk` — since this is typed tabular data (price, area,
+rooms, etc.), not prose, and the Calculation agent is meant to query
+it directly and deterministically rather than via embeddings/RAG:
+
+```
+python manage.py ingest_dld_transactions path/to/folder_or_file.csv --truncate
+```
+
+- Accepts either a single CSV file or a folder of CSVs.
+- `--truncate` — delete all existing `Transaction` rows first, for an
+  idempotent full reload (there's no reliable natural key in the DLD
+  export to dedupe on otherwise).
+- `--batch-size` — rows per `bulk_create` batch (default: 5000).
 
 ## Running tests
 
@@ -114,8 +137,9 @@ pytest
 ## Status
 
 Django project structure, data models, a health-check API endpoint,
-and a PDF ingestion pipeline (`ingest_pdfs`) are in place. DLD open
-data ingestion (non-PDF) and all agent logic (retrieval, calculation,
-compliance-checking, report generation) are not implemented yet.
-DRF defaults to `IsAuthenticated` (session auth); only `/api/health/`
-is explicitly public, for deployment monitoring.
+and ingestion pipelines for both RERA PDFs (`ingest_pdfs`) and DLD
+transaction CSVs (`ingest_dld_transactions`) are in place. All agent
+logic (retrieval, calculation, compliance-checking, report generation)
+is not implemented yet. DRF defaults to `IsAuthenticated` (session
+auth); only `/api/health/` is explicitly public, for deployment
+monitoring.
