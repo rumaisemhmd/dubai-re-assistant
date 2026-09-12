@@ -9,6 +9,7 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
+from django.utils import timezone
 
 from apps.ingestion.models import Transaction
 
@@ -47,9 +48,10 @@ def _to_datetime(value):
     if not value:
         return None
     try:
-        return datetime.strptime(value, DATE_FORMAT)
+        parsed = datetime.strptime(value, DATE_FORMAT)
     except ValueError:
         return None
+    return timezone.make_aware(parsed)
 
 
 def row_to_transaction(row):

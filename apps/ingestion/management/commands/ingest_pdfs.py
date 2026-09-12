@@ -19,7 +19,7 @@ from apps.ingestion.text_chunking import chunk_text
 class Command(BaseCommand):
     help = (
         "Extract text from every PDF in a folder, chunk it, embed the chunks "
-        "with OpenAI, and store them as Document/DocumentChunk records."
+        "with Gemini, and store them as Document/DocumentChunk records."
     )
 
     def add_arguments(self, parser):
@@ -49,8 +49,8 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        if not settings.OPENAI_API_KEY:
-            raise CommandError("OPENAI_API_KEY is not set — required to generate embeddings.")
+        if not settings.GEMINI_API_KEY:
+            raise CommandError("GEMINI_API_KEY is not set — required to generate embeddings.")
 
         if options["chunk_overlap"] >= options["chunk_size"]:
             raise CommandError("--chunk-overlap must be smaller than --chunk-size.")

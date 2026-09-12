@@ -116,10 +116,11 @@ REST_FRAMEWORK = {
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 
 # --- LLM / RAG configuration -------------------------------------------
-# OpenAI is used for embeddings (text-embedding-3-small, 1536 dimensions).
-# Anthropic (Claude) is used for agent reasoning/generation.
-OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+# Google Gemini is used for embeddings (gemini-embedding-001, truncated to
+# 1536 dimensions via output_dimensionality). Anthropic (Claude) is used
+# for agent reasoning/generation.
+GEMINI_API_KEY = env("GEMINI_API_KEY", default="")
 ANTHROPIC_API_KEY = env("ANTHROPIC_API_KEY", default="")
-EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="text-embedding-3-small")
+EMBEDDING_MODEL = env("EMBEDDING_MODEL", default="gemini-embedding-001")
 EMBEDDING_DIMENSIONS = env.int("EMBEDDING_DIMENSIONS", default=1536)
 LLM_MODEL = env("LLM_MODEL", default="claude-sonnet-5")

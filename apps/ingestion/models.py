@@ -36,9 +36,9 @@ class DocumentChunk(models.Model):
     chunk_index = models.PositiveIntegerField()
     content = models.TextField()
     language = models.CharField(max_length=2, choices=Document.Language.choices)
-    # Dimensions must match settings.EMBEDDING_DIMENSIONS (OpenAI
-    # text-embedding-3-small = 1536). Null until the ingestion pipeline
-    # embeds the chunk.
+    # Dimensions must match settings.EMBEDDING_DIMENSIONS (gemini-embedding-001
+    # truncated to 1536 via output_dimensionality). Null until the ingestion
+    # pipeline embeds the chunk.
     embedding = VectorField(dimensions=1536, null=True, blank=True)
     token_count = models.PositiveIntegerField(default=0)
     metadata = models.JSONField(default=dict, blank=True)
@@ -78,7 +78,7 @@ class Transaction(models.Model):
     procedure_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     actual_area = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     rooms = models.CharField(max_length=32, blank=True)
-    parking = models.CharField(max_length=32, blank=True)
+    parking = models.TextField(blank=True)
     nearest_metro = models.CharField(max_length=128, blank=True)
     nearest_mall = models.CharField(max_length=128, blank=True)
     nearest_landmark = models.CharField(max_length=128, blank=True)

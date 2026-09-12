@@ -17,11 +17,11 @@ incrementally on top of this skeleton):
 | **Compliance-checker** | Cross-references an investment scenario against the regulations returned by the retrieval agent. |
 | **Report-generator** | Assembles the outputs of the other agents into a PDF investment report (ReportLab). |
 
-Embeddings are generated with OpenAI (`text-embedding-3-small`, 1536
-dimensions) and stored in Postgres via `pgvector`. Agent reasoning and
-generation use Anthropic's Claude models. Both SDKs are included since
-the two roles — embedding vs. reasoning — are handled by different
-providers in this design.
+Embeddings are generated with Google's Gemini API (`gemini-embedding-001`,
+truncated to 1536 dimensions via `output_dimensionality`) and stored in
+Postgres via `pgvector`. Agent reasoning and generation use Anthropic's
+Claude models. Both SDKs are included since the two roles — embedding
+vs. reasoning — are handled by different providers in this design.
 
 ## Project layout
 
@@ -48,7 +48,7 @@ public API can evolve independently.
    ```
 
 2. Copy `.env.example` to `.env` and fill in the values (database URL,
-   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
+   `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, etc.).
 
 3. Create a local Postgres database with the `pgvector` extension
    available (e.g. the `pgvector/pgvector` Docker image, or any Postgres
@@ -67,8 +67,11 @@ public API can evolve independently.
 ## Ingesting documents
 
 `ingest_pdfs` extracts text from every PDF in a folder, splits it into
-overlapping chunks, embeds each chunk with OpenAI, and stores the
-results as `Document`/`DocumentChunk` rows:
+overlapping chunks, embeds each chunk with Gemini (`gemini-embedding-001`,
+truncated to `EMBEDDING_DIMENSIONS` via `output_dimensionality` and
+L2-normalized, since only the model's native 3072-dim output is
+pre-normalized), and stores the results as `Document`/`DocumentChunk`
+rows:
 
 ```
 python manage.py ingest_pdfs path/to/folder \
@@ -131,7 +134,7 @@ pytest
 - Attach a Render Postgres instance and set `DATABASE_URL` from its
   connection string; the `vector` extension must be enabled on that
   database before migrations run.
-- Set `SECRET_KEY`, `ALLOWED_HOSTS`, `OPENAI_API_KEY`, and
+- Set `SECRET_KEY`, `ALLOWED_HOSTS`, `GEMINI_API_KEY`, and
   `ANTHROPIC_API_KEY` as environment variables in the Render dashboard.
 
 ## Status
