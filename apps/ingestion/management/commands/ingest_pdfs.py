@@ -124,4 +124,6 @@ class Command(BaseCommand):
     def _extract_text(pdf_path):
         reader = PdfReader(str(pdf_path))
         pages = [page.extract_text() or "" for page in reader.pages]
-        return "\n\n".join(pages)
+        # Some malformed PDFs (broken font/glyph mappings) leak raw NUL
+        # bytes into extracted text, which Postgres text columns reject.
+        return "\n\n".join(pages).replace("\x00", "")

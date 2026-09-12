@@ -35,10 +35,13 @@ def _normalize(vector):
 def _embed_batch_with_retry(client, batch, config):
     """Call embed_content, retrying on 429 (rate limit) with backoff.
 
-    The free tier for gemini-embedding-001 has a tight per-minute request
-    limit, easily exceeded by a burst of same-second batch calls during
-    ingestion — this retries with growing delays instead of failing the
-    whole run on a transient rate limit.
+    Covers genuine transient rate limiting. It does NOT help if a batch
+    itself is too large — verified empirically that on the free tier,
+    embed_content batches of 20-50 chunk-sized texts (~2000 chars each)
+    succeed but 100 consistently fails with the same 429, no matter how
+    long you wait or how many retries. Keep batch_size comfortably under
+    that boundary (see embed_texts's default) rather than relying on
+    retries to paper over an oversized request.
     """
     for attempt in range(_MAX_RETRIES):
         try:
@@ -49,7 +52,7 @@ def _embed_batch_with_retry(client, batch, config):
             time.sleep(_RETRY_BACKOFF_SECONDS * (attempt + 1))
 
 
-def embed_texts(texts, task_type="RETRIEVAL_DOCUMENT", batch_size=100):
+def embed_texts(texts, task_type="RETRIEVAL_DOCUMENT", batch_size=40):
     """Return one embedding vector per input text, in the same order.
 
     task_type should be "RETRIEVAL_DOCUMENT" when embedding chunks to
