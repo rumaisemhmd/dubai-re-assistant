@@ -86,5 +86,5 @@ This is the project skeleton: Django project structure, app layout,
 data models for ingested documents, and a health-check API endpoint.
 Agent logic (retrieval, calculation, compliance-checking, report
 generation) and the ingestion pipeline are not implemented yet.
-DRF permissions default to `AllowAny` for local development — lock
-this down before handling real data.
+DRF defaults to `IsAuthenticated` (session auth); only `/api/health/`
+is explicitly public, for deployment monitoring.
