@@ -1,10 +1,360 @@
 {% extends "web/base.html" %}
 {% block title %}Dashboard — Dubai RE Assistant{% endblock %}
 {% block content %}
-<div class="min-h-screen flex flex-col items-center justify-center px-5 text-center">
-  <span class="text-xs font-semibold tracking-widest text-gold uppercase">Signed in as {{ user.email }}</span>
-  <h1 class="mt-3 font-display font-bold text-3xl">The app screen is coming next</h1>
-  <p class="mt-3 text-muted max-w-md">This is a placeholder so sign-in has somewhere to land. The scenario form, results view, and report download are built in the next pass.</p>
-  <a href="{% url 'web:landing' %}" class="mt-8 text-sm text-gold hover:text-gold-light transition-colors">&larr; Back to landing page</a>
+
+<div class="min-h-screen bg-canvas">
+
+  {# ---------- TOP BAR ---------- #}
+  <header class="sticky top-0 z-40 border-b border-white/5 bg-canvas/80 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+      <a href="{% url 'web:landing' %}" class="flex items-center gap-2.5 group">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gold to-gold-dark text-canvas font-display font-extrabold text-sm shadow-lg shadow-gold/10 transition-transform duration-300 group-hover:scale-105">D</span>
+        <span class="font-display font-bold tracking-tight text-[15px] sm:text-base hidden sm:inline">Dubai RE Assistant</span>
+      </a>
+      <div class="flex items-center gap-3 sm:gap-4">
+        <span class="hidden sm:inline text-xs text-muted truncate max-w-[220px]">{{ user.email }}</span>
+        <form method="post" action="{% url 'account_logout' %}">
+          {% csrf_token %}
+          <button type="submit"
+                  class="text-xs font-semibold text-muted hover:text-ink transition-colors rounded-full border border-white/10 px-3.5 py-2 hover:border-white/20">
+            Sign out
+          </button>
+        </form>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-5 sm:px-8 py-10 sm:py-14">
+    <div class="mb-8 sm:mb-10">
+      <span class="text-xs font-semibold tracking-widest text-gold uppercase">Scenario builder</span>
+      <h1 class="mt-2 font-display font-bold text-2xl sm:text-3xl tracking-tight">Run a property analysis</h1>
+      <p class="mt-2.5 text-sm text-muted max-w-2xl leading-relaxed">
+        Pick an area, property type and price to get a deterministic price/sqft, rental yield and ROI
+        estimate — add a scenario or question below for a cited compliance verdict too.
+      </p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+      {# ---------- FORM ---------- #}
+      <div class="lg:col-span-5 xl:col-span-4">
+        <form id="scenario-form" class="rounded-2xl border border-white/10 bg-surface p-6 space-y-5">
+          {% csrf_token %}
+
+          <div>
+            <label for="id_area" class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">Area</label>
+            <select id="id_area" name="area" required
+                    class="w-full rounded-lg border border-white/10 bg-surface2 px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50">
+              <option value="" disabled selected>Select an area&hellip;</option>
+              {% for area in areas %}
+                <option value="{{ area }}">{{ area }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="id_property_type" class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">Property Type</label>
+            <select id="id_property_type" name="property_type" required
+                    class="w-full rounded-lg border border-white/10 bg-surface2 px-3.5 py-2.5 text-sm text-ink focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50">
+              <option value="" disabled selected>Select a type&hellip;</option>
+              {% for pt in property_types %}
+                <option value="{{ pt }}">{{ pt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="id_purchase_price" class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">Purchase Price (AED)</label>
+            <input id="id_purchase_price" name="purchase_price" type="number" min="1" step="1" required
+                   placeholder="e.g. 1500000"
+                   class="w-full rounded-lg border border-white/10 bg-surface2 px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50">
+          </div>
+
+          <div>
+            <label for="id_scenario" class="block text-xs font-semibold text-muted uppercase tracking-wide mb-1.5">
+              Compliance Question <span class="normal-case font-normal text-muted/70">(optional)</span>
+            </label>
+            <textarea id="id_scenario" name="scenario" rows="3"
+                      placeholder="e.g. &quot;Developer wants 50% payment before registration&quot;"
+                      class="w-full rounded-lg border border-white/10 bg-surface2 px-3.5 py-2.5 text-sm text-ink placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold/50 resize-none"></textarea>
+          </div>
+
+          <div id="form-error" class="hidden rounded-lg border border-red-500/30 bg-red-500/10 px-3.5 py-2.5 text-xs text-red-300 leading-relaxed"></div>
+
+          <div class="flex flex-col sm:flex-row gap-3 pt-1">
+            <button type="submit" id="analyze-btn"
+                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-gold px-5 py-3 text-sm font-semibold text-canvas transition-all duration-200 hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 active:scale-[0.97] disabled:opacity-50 disabled:pointer-events-none">
+              <span id="analyze-btn-text">Run Analysis</span>
+            </button>
+            <button type="button" id="download-btn" disabled
+                    class="inline-flex flex-1 items-center justify-center gap-2 rounded-full border border-white/10 px-5 py-3 text-sm font-semibold text-ink/90 transition-all duration-200 hover:bg-white/5 hover:border-white/20 disabled:opacity-40 disabled:pointer-events-none">
+              <span id="download-btn-text">Download PDF Report</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {# ---------- RESULTS ---------- #}
+      <div class="lg:col-span-7 xl:col-span-8">
+
+        <div id="results-empty" class="rounded-2xl border border-dashed border-white/10 p-10 sm:p-16 text-center text-muted">
+          <svg class="mx-auto h-10 w-10 text-muted/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v-4.5m3 4.5v-9m3 9v-6M6 3.75h12A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75Z"/>
+          </svg>
+          <p class="mt-4 text-sm">Fill in the form and run an analysis to see results here.</p>
+        </div>
+
+        <div id="results-loading" class="hidden space-y-4">
+          <div class="flex items-center gap-2.5 text-sm text-muted mb-1">
+            <svg class="h-4 w-4 animate-spin text-gold" viewBox="0 0 24 24" fill="none">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3.5"></circle>
+              <path class="opacity-90" fill="currentColor" d="M22 12a10 10 0 0 0-10-10v3a7 7 0 0 1 7 7h3Z"></path>
+            </svg>
+            Running the agents — this can take a few seconds&hellip;
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-2xl border border-white/10 bg-surface p-6 animate-pulse">
+              <div class="h-9 w-9 rounded-lg bg-white/10 mb-4"></div>
+              <div class="h-3 w-24 bg-white/10 rounded mb-3"></div>
+              <div class="h-7 w-32 bg-white/10 rounded"></div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-surface p-6 animate-pulse">
+              <div class="h-9 w-9 rounded-lg bg-white/10 mb-4"></div>
+              <div class="h-3 w-24 bg-white/10 rounded mb-3"></div>
+              <div class="h-7 w-32 bg-white/10 rounded"></div>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-surface p-6 animate-pulse">
+            <div class="h-9 w-9 rounded-lg bg-white/10 mb-4"></div>
+            <div class="h-3 w-40 bg-white/10 rounded mb-3"></div>
+            <div class="h-16 bg-white/10 rounded"></div>
+          </div>
+        </div>
+
+        <div id="results-content" class="hidden space-y-4"></div>
+
+      </div>
+    </div>
+  </main>
 </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const form = document.getElementById('scenario-form');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const analyzeBtnText = document.getElementById('analyze-btn-text');
+  const downloadBtn = document.getElementById('download-btn');
+  const downloadBtnText = document.getElementById('download-btn-text');
+  const errorBox = document.getElementById('form-error');
+  const empty = document.getElementById('results-empty');
+  const loading = document.getElementById('results-loading');
+  const content = document.getElementById('results-content');
+  const csrfToken = form.querySelector('[name=csrfmiddlewaretoken]').value;
+
+  const ANALYZE_URL = "{% url 'web:analyze' %}";
+  const REPORT_URL = "{% url 'web:report' %}";
+
+  const spinnerSvg = '<svg class="inline h-4 w-4 animate-spin -mt-0.5 mr-1.5" viewBox="0 0 24 24" fill="none">'
+    + '<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3.5"></circle>'
+    + '<path class="opacity-90" fill="currentColor" d="M22 12a10 10 0 0 0-10-10v3a7 7 0 0 1 7 7h3Z"></path></svg>';
+
+  const iconMoney = '<svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5 9 7.5l4 4 8-8M15 3.5h5.5V9"/></svg>';
+  const iconYield = '<svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v6c0 4.5 3.2 7.5 7.5 9 4.3-1.5 7.5-4.5 7.5-9V6L12 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9.25 12 1.9 1.9 3.6-3.9"/></svg>';
+  const iconTrend = '<svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="m3 16.5 6-6 4 4 8-8M21 10v-3.5h-3.5"/></svg>';
+  const iconShield = '<svg class="h-4.5 w-4.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v6c0 4.5 3.2 7.5 7.5 9 4.3-1.5 7.5-4.5 7.5-9V6L12 3Z"/></svg>';
+
+  let lastPayload = null;
+
+  function h(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+  function fmt(n) {
+    return Number(n).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  }
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.classList.remove('hidden');
+  }
+  function clearError() {
+    errorBox.classList.add('hidden');
+    errorBox.textContent = '';
+  }
+  function setAnalyzing(isLoading) {
+    analyzeBtn.disabled = isLoading;
+    analyzeBtnText.innerHTML = isLoading ? (spinnerSvg + 'Analyzing&hellip;') : 'Run Analysis';
+  }
+  function setDownloading(isLoading) {
+    downloadBtn.disabled = isLoading || !lastPayload;
+    downloadBtnText.innerHTML = isLoading ? (spinnerSvg + 'Generating&hellip;') : 'Download PDF Report';
+  }
+
+  function card(title, icon, bodyHtml) {
+    return '<div class="rounded-2xl border border-white/10 bg-surface p-6">'
+      + '<div class="flex items-center gap-2.5 mb-4">'
+      + '<div class="flex h-9 w-9 items-center justify-center rounded-lg bg-gold/10 text-gold">' + icon + '</div>'
+      + '<h3 class="font-display font-semibold text-sm">' + h(title) + '</h3>'
+      + '</div>' + bodyHtml + '</div>';
+  }
+  function unavailableCard(title, icon, message) {
+    return card(title, icon,
+      '<div class="rounded-lg border border-white/10 bg-surface2/60 px-3.5 py-3 text-xs text-muted leading-relaxed">'
+      + '<span class="font-semibold text-ink/80">Not available.</span> ' + h(message) + '</div>');
+  }
+
+  function priceCard(pps) {
+    if (!pps.available) return unavailableCard('Price per Sqft', iconMoney, pps.message);
+    return card('Price per Sqft', iconMoney,
+      '<div class="text-3xl font-display font-bold text-ink">AED ' + fmt(pps.value) + '<span class="text-base font-normal text-muted">/sqft</span></div>'
+      + '<p class="mt-2 text-xs text-muted">Based on ' + fmt(pps.sample_size) + ' comparable sale(s).</p>');
+  }
+  function yieldCard(ry) {
+    if (!ry.available) return unavailableCard('Rental Yield', iconYield, ry.message);
+    return card('Rental Yield', iconYield,
+      '<div class="text-3xl font-display font-bold text-ink">' + ry.value.toFixed(2) + '<span class="text-base font-normal text-muted">%</span></div>'
+      + '<p class="mt-2 text-xs text-muted leading-relaxed">' + h(ry.message) + '</p>');
+  }
+  function roiCard(roi) {
+    const title = 'ROI Estimate (' + roi.years + '-Year)';
+    if (!roi.available) return unavailableCard(title, iconTrend, roi.message);
+    let body = '<div class="grid grid-cols-2 gap-4">'
+      + '<div><div class="text-2xl font-display font-bold text-ink">' + (roi.annual_growth_rate * 100).toFixed(2) + '%</div>'
+      + '<div class="text-xs text-muted mt-1">Est. annual growth</div></div>'
+      + '<div><div class="text-2xl font-display font-bold text-ink">' + roi.total_roi_pct.toFixed(2) + '%</div>'
+      + '<div class="text-xs text-muted mt-1">Total ROI</div></div></div>';
+    if (roi.projected_value != null) {
+      body += '<p class="mt-3 text-xs text-muted">Projected value: <span class="text-ink font-medium">AED ' + fmt(roi.projected_value) + '</span></p>';
+    }
+    body += '<p class="mt-3 text-xs text-muted/80 leading-relaxed">' + h(roi.message) + '</p>';
+    return card(title, iconTrend, body);
+  }
+
+  const VERDICT_STYLES = {
+    compliant: { ring: 'border-emerald-500/30', bg: 'bg-emerald-500/10', text: 'text-emerald-400', label: 'Compliant' },
+    violation: { ring: 'border-red-500/30', bg: 'bg-red-500/10', text: 'text-red-400', label: 'Violation' },
+    unclear: { ring: 'border-white/15', bg: 'bg-white/5', text: 'text-muted', label: 'Unclear' },
+  };
+  function complianceCard(ca) {
+    const s = VERDICT_STYLES[ca.verdict] || VERDICT_STYLES.unclear;
+    let citations = '';
+    (ca.citations || []).forEach(function (c) {
+      citations += '<div class="rounded-lg border border-white/10 bg-surface2/60 px-3.5 py-3">'
+        + '<div class="flex items-center justify-between gap-2">'
+        + '<span class="text-xs font-semibold text-gold">[' + h(c.source_number) + '] ' + h(c.article_or_rule) + '</span>'
+        + '<span class="text-[11px] text-muted/70 truncate max-w-[45%]">' + h(c.document_title) + '</span></div>'
+        + '<p class="mt-1.5 text-xs text-muted leading-relaxed">' + h(c.relevance) + '</p></div>';
+    });
+    return '<div class="rounded-2xl border ' + s.ring + ' bg-surface p-6">'
+      + '<div class="flex items-center justify-between gap-3 mb-4 flex-wrap">'
+      + '<div class="flex items-center gap-2.5">'
+      + '<div class="flex h-9 w-9 items-center justify-center rounded-lg ' + s.bg + ' ' + s.text + '">' + iconShield + '</div>'
+      + '<h3 class="font-display font-semibold text-sm">Compliance Check</h3></div>'
+      + '<span class="inline-flex items-center rounded-full ' + s.bg + ' ' + s.text + ' border ' + s.ring + ' px-3 py-1 text-[11px] font-bold uppercase tracking-wide">' + s.label + '</span>'
+      + '</div>'
+      + '<p class="text-xs text-muted mb-1"><span class="font-semibold text-ink/80">Scenario:</span> ' + h(ca.scenario) + '</p>'
+      + '<p class="mt-2 text-sm text-ink/90 leading-relaxed">' + h(ca.summary) + '</p>'
+      + (citations ? '<div class="mt-4 space-y-2">' + citations + '</div>' : '<p class="mt-3 text-xs text-muted/70">No specific citations returned.</p>')
+      + '</div>';
+  }
+  function complianceErrorCard(message) {
+    return '<div class="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-5 text-xs text-amber-300/90 leading-relaxed">' + h(message) + '</div>';
+  }
+
+  function renderResults(data) {
+    const a = data.analysis;
+    let html = '<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">'
+      + priceCard(a.price_per_sqft) + yieldCard(a.rental_yield) + '</div>'
+      + '<div class="mt-4">' + roiCard(a.roi) + '</div>';
+    if (data.compliance) {
+      html += '<div class="mt-4">' + complianceCard(data.compliance) + '</div>';
+    } else if (data.compliance_error) {
+      html += '<div class="mt-4">' + complianceErrorCard(data.compliance_error) + '</div>';
+    }
+    content.innerHTML = html;
+  }
+
+  function payloadFromForm() {
+    return {
+      area: form.area.value,
+      property_type: form.property_type.value,
+      purchase_price: form.purchase_price.value,
+      scenario: form.scenario.value.trim(),
+    };
+  }
+
+  form.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    clearError();
+    if (!form.reportValidity()) return;
+
+    const payload = payloadFromForm();
+    empty.classList.add('hidden');
+    content.classList.add('hidden');
+    loading.classList.remove('hidden');
+    setAnalyzing(true);
+    downloadBtn.disabled = true;
+
+    try {
+      const res = await fetch(ANALYZE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+
+      renderResults(data);
+      lastPayload = payload;
+      loading.classList.add('hidden');
+      content.classList.remove('hidden');
+    } catch (err) {
+      loading.classList.add('hidden');
+      empty.classList.remove('hidden');
+      showError(err.message || 'Something went wrong. Please try again.');
+    } finally {
+      setAnalyzing(false);
+      downloadBtn.disabled = !lastPayload;
+    }
+  });
+
+  downloadBtn.addEventListener('click', async function () {
+    if (!lastPayload) return;
+    clearError();
+    setDownloading(true);
+
+    try {
+      const res = await fetch(REPORT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+        body: JSON.stringify(lastPayload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(function () { return {}; });
+        throw new Error(data.error || 'Report generation failed.');
+      }
+      const blob = await res.blob();
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match ? match[1] : 'investment-report.pdf';
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      showError(err.message || 'Report generation failed. Please try again.');
+    } finally {
+      setDownloading(false);
+    }
+  });
+})();
+</script>
 {% endblock %}
