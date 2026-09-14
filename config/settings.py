@@ -16,9 +16,25 @@ SECRET_KEY = env("SECRET_KEY", default="insecure-dev-key-change-me")
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 
+# Render auto-sets RENDER_EXTERNAL_HOSTNAME on every web service — no need to
+# set it manually in the dashboard, or to hardcode the *.onrender.com host.
 RENDER_EXTERNAL_HOSTNAME = env("RENDER_EXTERNAL_HOSTNAME", default="")
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS = [f"https://{RENDER_EXTERNAL_HOSTNAME}"]
+
+# Render terminates TLS at its proxy and forwards plain HTTP internally,
+# signaling the original scheme via X-Forwarded-Proto. Without this, Django
+# thinks every request is insecure — breaking CSRF checks (Referer scheme
+# mismatch) and the "secure" cookie flags below — even though the browser
+# connected over HTTPS.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 7 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = not DEBUG
 
 INSTALLED_APPS = [
     "django.contrib.admin",

@@ -131,11 +131,37 @@ pytest
 
 - **Build command:** `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
 - **Start command:** `gunicorn config.wsgi:application`
+- **Health check path:** `/api/health/` (public, no auth required).
 - Attach a Render Postgres instance and set `DATABASE_URL` from its
   connection string; the `vector` extension must be enabled on that
   database before migrations run.
-- Set `SECRET_KEY`, `ALLOWED_HOSTS`, `GEMINI_API_KEY`, and
-  `ANTHROPIC_API_KEY` as environment variables in the Render dashboard.
+- Environment variables to set in the Render dashboard (same names as
+  local `.env`):
+  - `SECRET_KEY` — a fresh production value, **not** the one from local
+    `.env` (`python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`).
+  - `DEBUG` — `False`.
+  - `DATABASE_URL` — the Render Postgres connection string.
+  - `GEMINI_API_KEY`, `ANTHROPIC_API_KEY` — same as local.
+  - `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` — same as
+    local (see the Google Sign-In note below).
+  - `CORS_ALLOWED_ORIGINS` — only needed if a separate frontend origin
+    calls the API; leave unset otherwise.
+  - `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS` — **do not set manually.**
+    Render auto-populates `RENDER_EXTERNAL_HOSTNAME` on every web
+    service, and `config/settings.py` derives both from it
+    automatically.
+- **Google Sign-In redirect URI:** after the first deploy, go to
+  [Google Cloud Console → APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials),
+  open the OAuth client, and add
+  `https://<your-service>.onrender.com/accounts/google/login/callback/`
+  to **Authorized redirect URIs** (alongside the existing
+  `http://127.0.0.1:8000/...` one used for local dev — keep both).
+- Generated PDF reports (`media/reports/`) are written to Render's
+  ephemeral disk — they're served fine within the request that
+  generates them, but don't persist across deploys/restarts and won't
+  be shared if the service scales to multiple instances. Not an issue
+  for the current download-immediately flow; would need object storage
+  (e.g. S3) if reports ever need to persist longer-term.
 
 ## Status
 
