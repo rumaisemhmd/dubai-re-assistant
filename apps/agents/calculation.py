@@ -180,9 +180,9 @@ class CalculationAgent:
             value=yield_pct,
             sample_size=n,
             message=(
-                f"Based on {n} comparable rent contract(s): avg annual rent "
-                f"{avg_rent_ppsf:.0f}/sqft over avg sale price {price_per_sqft.value:.0f}/sqft "
-                f"({price_per_sqft.sample_size} comparable sale(s))."
+                f"Based on {n:,} comparable rent contract(s), the average annual rent is "
+                f"AED {avg_rent_ppsf:,.0f}/sqft against an average sale price of "
+                f"AED {price_per_sqft.value:,.0f}/sqft (from {price_per_sqft.sample_size:,} comparable sale(s))."
             ),
         )
 
