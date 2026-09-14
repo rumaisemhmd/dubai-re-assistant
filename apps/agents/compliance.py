@@ -25,6 +25,10 @@ from apps.agents.retrieval import RetrievalAgent
 DEFAULT_TOP_K = 8
 # Free-tier Gemini reasoning model — see apps.ingestion.embeddings for the
 # same rationale on why this project targets Gemini over a paid provider.
+# Deliberately Gemini-only for now (no Anthropic API credits available).
+# The reasoning call is isolated to get_client()/_generate_with_retry()/this
+# constant, so swapping in Claude (settings.ANTHROPIC_API_KEY + anthropic
+# SDK) later is a localized change, not a rewrite of the agent's logic.
 DEFAULT_MODEL = "gemini-3.6-flash"
 _MAX_RETRIES = 5
 _RETRY_BACKOFF_SECONDS = 20
