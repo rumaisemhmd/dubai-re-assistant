@@ -27,11 +27,17 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.sites",
+    "allauth",
+    "allauth.account",
+    "allauth.socialaccount",
+    "allauth.socialaccount.providers.google",
     "rest_framework",
     "corsheaders",
     "apps.ingestion",
     "apps.agents",
     "apps.api",
+    "apps.web",
 ]
 
 MIDDLEWARE = [
@@ -44,6 +50,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -72,6 +79,35 @@ DATABASES = {
         "DATABASE_URL",
         default="postgres://postgres:postgres@localhost:5432/rag_dev",
     )
+}
+
+SITE_ID = 1
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "allauth.account.auth_backends.AuthenticationBackend",
+]
+
+# --- Auth (Google-only via django-allauth) ------------------------------
+LOGIN_URL = "/accounts/google/login/"
+LOGIN_REDIRECT_URL = "/app/"
+LOGOUT_REDIRECT_URL = "/"
+
+# No local username/password accounts — Google is the only sign-in method.
+SOCIALACCOUNT_ONLY = True
+SOCIALACCOUNT_LOGIN_ON_GET = True  # skip allauth's "Continue" interstitial page
+ACCOUNT_EMAIL_VERIFICATION = "none"  # Google already verifies the email address
+
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": env("GOOGLE_OAUTH_CLIENT_ID", default=""),
+            "secret": env("GOOGLE_OAUTH_CLIENT_SECRET", default=""),
+            "key": "",
+        },
+        "SCOPE": ["profile", "email"],
+        "AUTH_PARAMS": {"access_type": "online"},
+    }
 }
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -1,0 +1,10 @@
+{% extends "web/base.html" %}
+{% block title %}Dashboard — Dubai RE Assistant{% endblock %}
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center px-5 text-center">
+  <span class="text-xs font-semibold tracking-widest text-gold uppercase">Signed in as {{ user.email }}</span>
+  <h1 class="mt-3 font-display font-bold text-3xl">The app screen is coming next</h1>
+  <p class="mt-3 text-muted max-w-md">This is a placeholder so sign-in has somewhere to land. The scenario form, results view, and report download are built in the next pass.</p>
+  <a href="{% url 'web:landing' %}" class="mt-8 text-sm text-gold hover:text-gold-light transition-colors">&larr; Back to landing page</a>
+</div>
+{% endblock %}

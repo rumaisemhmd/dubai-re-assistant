@@ -1,0 +1,115 @@
+{% load socialaccount %}
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Dubai RE Assistant{% endblock %}</title>
+<meta name="description" content="{% block description %}AI-powered real estate intelligence for Dubai — grounded calculations, cited compliance checks, and professional investment reports.{% endblock %}">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        colors: {
+          // Named "canvas" (not "base") to avoid colliding with Tailwind's
+          // built-in text-base font-size utility — text-base/bg-base would
+          // otherwise silently resolve to this color instead of font-size.
+          canvas: '#090C13',
+          surface: '#11151F',
+          surface2: '#171C29',
+          border: '#232A3B',
+          gold: { DEFAULT: '#C9A84C', light: '#E3C878', dark: '#9C7F2E' },
+          navy: { DEFAULT: '#1B2A4A', light: '#2A3F68' },
+          ink: '#F4F6FA',
+          muted: '#93A0B8',
+        },
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          display: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        },
+        keyframes: {
+          flow: {
+            '0%':   { transform: 'translateX(-6%)', opacity: '0' },
+            '10%':  { opacity: '1' },
+            '90%':  { opacity: '1' },
+            '100%': { transform: 'translateX(106%)', opacity: '0' },
+          },
+          fadeUp: {
+            '0%':   { opacity: '0', transform: 'translateY(16px)' },
+            '100%': { opacity: '1', transform: 'translateY(0)' },
+          },
+          fadeIn: {
+            '0%':   { opacity: '0' },
+            '100%': { opacity: '1' },
+          },
+          glow: {
+            '0%, 100%': { opacity: '0.55' },
+            '50%':      { opacity: '1' },
+          },
+        },
+        animation: {
+          flow: 'flow 2.8s cubic-bezier(0.4,0,0.2,1) infinite',
+          'fade-up': 'fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) both',
+          'fade-in': 'fadeIn 0.9s ease-out both',
+          glow: 'glow 4s ease-in-out infinite',
+        },
+      },
+    },
+  }
+</script>
+
+<style>
+  html { background-color: #090C13; }
+  body { font-feature-settings: 'tnum' 1; }
+  ::selection { background-color: #C9A84C; color: #090C13; }
+
+  /* Scroll-reveal: JS toggles .is-visible; no-JS/no-motion users still see content. */
+  .reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.16,1,.3,1), transform .7s cubic-bezier(.16,1,.3,1); }
+  .reveal.is-visible { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  }
+
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, rgba(148,163,184,0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(148,163,184,0.06) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body class="bg-canvas text-ink font-sans antialiased selection:bg-gold selection:text-canvas">
+{% block content %}{% endblock %}
+
+<script>
+  // Scroll-reveal via IntersectionObserver.
+  document.addEventListener('DOMContentLoaded', () => {
+    const items = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window) || items.length === 0) {
+      items.forEach(el => el.classList.add('is-visible'));
+      return;
+    }
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    items.forEach(el => io.observe(el));
+  });
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

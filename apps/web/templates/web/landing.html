@@ -1,0 +1,271 @@
+{% extends "web/base.html" %}
+{% load socialaccount %}
+
+{% block content %}
+
+{# ---------- NAV ---------- #}
+<header class="fixed top-0 inset-x-0 z-50 border-b border-white/5 bg-canvas/80 backdrop-blur-md">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+    <a href="{% url 'web:landing' %}" class="flex items-center gap-2.5 group">
+      <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gold to-gold-dark text-canvas font-display font-extrabold text-sm shadow-lg shadow-gold/10 transition-transform duration-300 group-hover:scale-105">D</span>
+      <span class="font-display font-bold tracking-tight text-[15px] sm:text-base">Dubai RE Assistant</span>
+    </a>
+
+    <nav class="hidden md:flex items-center gap-8 text-sm text-muted">
+      <a href="#how-it-works" class="hover:text-ink transition-colors duration-200">How it works</a>
+      <a href="#capabilities" class="hover:text-ink transition-colors duration-200">Capabilities</a>
+    </nav>
+
+    <div class="hidden md:flex items-center gap-3">
+      {% if user.is_authenticated %}
+        <a href="{% url 'web:dashboard' %}"
+           class="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-sm font-semibold text-canvas transition-all duration-200 hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 active:scale-[0.97]">
+          Go to Dashboard
+        </a>
+      {% else %}
+        <a href="{% provider_login_url 'google' next='/app/' %}"
+           class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-semibold text-[#1F1F1F] shadow-sm transition-all duration-200 hover:shadow-lg hover:shadow-white/10 active:scale-[0.97]">
+          {% include "web/_google_icon.html" %}
+          Sign in with Google
+        </a>
+      {% endif %}
+    </div>
+
+    <button id="nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false"
+            class="md:hidden inline-flex items-center justify-center h-10 w-10 rounded-lg text-ink hover:bg-white/5 transition-colors">
+      <svg id="nav-icon-open" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5" />
+      </svg>
+      <svg id="nav-icon-close" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  {# Mobile menu #}
+  <div id="mobile-menu" class="md:hidden hidden border-t border-white/5 bg-canvas/95 backdrop-blur-md px-5 py-4 space-y-3">
+    <a href="#how-it-works" class="block text-sm text-muted hover:text-ink transition-colors py-1.5">How it works</a>
+    <a href="#capabilities" class="block text-sm text-muted hover:text-ink transition-colors py-1.5">Capabilities</a>
+    {% if user.is_authenticated %}
+      <a href="{% url 'web:dashboard' %}" class="block text-center rounded-full bg-gold px-4 py-2.5 text-sm font-semibold text-canvas">Go to Dashboard</a>
+    {% else %}
+      <a href="{% provider_login_url 'google' next='/app/' %}"
+         class="flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-semibold text-[#1F1F1F]">
+        {% include "web/_google_icon.html" %}
+        Sign in with Google
+      </a>
+    {% endif %}
+  </div>
+</header>
+
+{# ---------- HERO ---------- #}
+<section class="relative overflow-hidden pt-40 pb-28 sm:pt-48 sm:pb-36 bg-grid">
+  <div class="pointer-events-none absolute inset-0 overflow-hidden">
+    <div class="absolute left-1/2 top-[-12rem] h-[34rem] w-[52rem] -translate-x-1/2 rounded-full bg-navy/40 blur-[110px] animate-glow"></div>
+    <div class="absolute right-[-8rem] top-40 h-72 w-72 rounded-full bg-gold/10 blur-[100px]"></div>
+  </div>
+
+  <div class="relative max-w-4xl mx-auto px-5 sm:px-8 text-center">
+    <div class="reveal inline-flex items-center gap-2 rounded-full border border-white/10 bg-surface/60 px-4 py-1.5 text-xs font-medium text-muted mb-8">
+      <span class="h-1.5 w-1.5 rounded-full bg-gold animate-pulse"></span>
+      Grounded in real DLD transaction data &amp; RERA regulations
+    </div>
+
+    <h1 class="reveal font-display font-extrabold tracking-tight text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.08]" style="animation-delay:.08s">
+      Ask any Dubai real&nbsp;estate question.
+      <span class="block bg-gradient-to-r from-gold-light via-gold to-gold-dark bg-clip-text text-transparent">Get a cited, defensible answer.</span>
+    </h1>
+
+    <p class="reveal mt-6 text-base sm:text-lg text-muted max-w-2xl mx-auto leading-relaxed" style="animation-delay:.16s">
+      No hallucinated numbers, no vague legal guesses. Every price/sqft, yield and ROI figure is computed
+      directly from DLD transaction data — and every compliance verdict cites the exact RERA article it's
+      grounded in. Delivered as a report you can hand to a client.
+    </p>
+
+    <div class="reveal mt-10 flex flex-col sm:flex-row items-center justify-center gap-3.5" style="animation-delay:.24s">
+      {% if user.is_authenticated %}
+        <a href="{% url 'web:dashboard' %}"
+           class="group inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3.5 text-sm font-semibold text-canvas transition-all duration-200 hover:bg-gold-light hover:shadow-xl hover:shadow-gold/20 active:scale-[0.97]">
+          Go to Dashboard
+          <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+        </a>
+      {% else %}
+        <a href="{% provider_login_url 'google' next='/app/' %}"
+           class="group inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3.5 text-sm font-semibold text-canvas transition-all duration-200 hover:bg-gold-light hover:shadow-xl hover:shadow-gold/20 active:scale-[0.97]">
+          Get Started Free
+          <svg class="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" /></svg>
+        </a>
+      {% endif %}
+      <a href="#how-it-works"
+         class="inline-flex items-center gap-2 rounded-full border border-white/10 px-7 py-3.5 text-sm font-semibold text-ink/90 transition-all duration-200 hover:bg-white/5 hover:border-white/20">
+        See how it works
+      </a>
+    </div>
+
+    <p class="reveal mt-6 text-xs text-muted/70" style="animation-delay:.3s">Free to try &middot; Sign in with Google &middot; No credit card</p>
+  </div>
+</section>
+
+{# ---------- HOW IT WORKS ---------- #}
+<section id="how-it-works" class="relative py-24 sm:py-32 border-t border-white/5">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8">
+    <div class="reveal text-center max-w-2xl mx-auto mb-20">
+      <span class="text-xs font-semibold tracking-widest text-gold uppercase">How it works</span>
+      <h2 class="mt-3 font-display font-bold text-3xl sm:text-4xl tracking-tight">From a question to a cited report</h2>
+      <p class="mt-4 text-muted leading-relaxed">Four agents, one pipeline. Each step is grounded in real, retrievable data — nothing is invented along the way.</p>
+    </div>
+
+    <div class="relative">
+      {# animated connector — desktop only #}
+      <div class="hidden md:block absolute left-0 right-0 top-9 h-px">
+        <div class="h-full w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+        <div class="absolute inset-y-0 left-0 w-1/4">
+          <span class="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_10px_2px] shadow-gold/60 animate-flow"></span>
+        </div>
+        <div class="absolute inset-y-0 left-1/4 w-1/4">
+          <span class="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_10px_2px] shadow-gold/60 animate-flow" style="animation-delay:.7s"></span>
+        </div>
+        <div class="absolute inset-y-0 left-2/4 w-1/4">
+          <span class="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_10px_2px] shadow-gold/60 animate-flow" style="animation-delay:1.4s"></span>
+        </div>
+        <div class="absolute inset-y-0 left-3/4 w-1/4">
+          <span class="absolute top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-gold shadow-[0_0_10px_2px] shadow-gold/60 animate-flow" style="animation-delay:2.1s"></span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-6">
+
+        <div class="reveal flex flex-col items-center text-center" style="animation-delay:.05s">
+          <div class="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-surface shadow-lg">
+            <svg class="h-7 w-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 10.5h7.5m-7.5 3h4.5m4.5-9H3.75A2.25 2.25 0 0 0 1.5 6.75v7.5a2.25 2.25 0 0 0 2.25 2.25h3v3l4.5-3h9a2.25 2.25 0 0 0 2.25-2.25v-7.5A2.25 2.25 0 0 0 20.25 4.5Z"/></svg>
+          </div>
+          <h3 class="mt-5 font-display font-semibold text-[15px]">Ask a question</h3>
+          <p class="mt-2 text-sm text-muted leading-relaxed max-w-[15rem]">Describe a property or a proposed deal in plain English.</p>
+        </div>
+
+        <div class="reveal flex flex-col items-center text-center" style="animation-delay:.25s">
+          <div class="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-surface shadow-lg">
+            <svg class="h-7 w-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16Zm-3.5-8h7M11 7.5v7"/></svg>
+          </div>
+          <h3 class="mt-5 font-display font-semibold text-[15px]">RAG retrieves sources</h3>
+          <p class="mt-2 text-sm text-muted leading-relaxed max-w-[15rem]">Embedding search pulls the exact RERA/DLD passages that apply.</p>
+        </div>
+
+        <div class="reveal flex flex-col items-center text-center" style="animation-delay:.45s">
+          <div class="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-surface shadow-lg gap-1.5">
+            <svg class="h-6 w-6 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path stroke-linecap="round" d="M8.5 7.5h7M8.5 11h1.5m3 0h1.5M8.5 14.5h1.5m3 0h1.5"/></svg>
+            <svg class="h-6 w-6 text-gold/80" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+          </div>
+          <h3 class="mt-5 font-display font-semibold text-[15px]">Calculate &amp; check compliance</h3>
+          <p class="mt-2 text-sm text-muted leading-relaxed max-w-[15rem]">Deterministic ROI/yield math, plus a cited compliance verdict.</p>
+        </div>
+
+        <div class="reveal flex flex-col items-center text-center" style="animation-delay:.65s">
+          <div class="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-surface shadow-lg">
+            <svg class="h-7 w-7 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" opacity="0"/><path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75h8.25L19.5 9v11.25a1 1 0 0 1-1 1h-12.5a1 1 0 0 1-1-1V4.75a1 1 0 0 1 1-1Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M14 3.75V9h5.25"/><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v-4.5l1.6 2.1 1.6-2.1v4.5"/></svg>
+          </div>
+          <h3 class="mt-5 font-display font-semibold text-[15px]">Get your report</h3>
+          <p class="mt-2 text-sm text-muted leading-relaxed max-w-[15rem]">A clean, professional PDF investment report, ready to download.</p>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ---------- CAPABILITIES ---------- #}
+<section id="capabilities" class="relative py-24 sm:py-32 border-t border-white/5 bg-surface/30">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8">
+    <div class="reveal text-center max-w-2xl mx-auto mb-16">
+      <span class="text-xs font-semibold tracking-widest text-gold uppercase">Why it's different</span>
+      <h2 class="mt-3 font-display font-bold text-3xl sm:text-4xl tracking-tight">Built to be checked, not just trusted</h2>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="reveal rounded-2xl border border-white/10 bg-surface p-7 transition-all duration-300 hover:border-gold/30 hover:-translate-y-1" style="animation-delay:.05s">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/10">
+          <svg class="h-5 w-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.5 9 7.5l4 4 8-8M15 3.5h5.5V9"/></svg>
+        </div>
+        <h3 class="mt-5 font-display font-semibold text-base">Deterministic calculations</h3>
+        <p class="mt-2.5 text-sm text-muted leading-relaxed">Price/sqft, rental yield and ROI are plain arithmetic over ingested DLD transactions — never an LLM guess. When the data can't support a confident number, we say so.</p>
+      </div>
+
+      <div class="reveal rounded-2xl border border-white/10 bg-surface p-7 transition-all duration-300 hover:border-gold/30 hover:-translate-y-1" style="animation-delay:.2s">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/10">
+          <svg class="h-5 w-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v6c0 4.5 3.2 7.5 7.5 9 4.3-1.5 7.5-4.5 7.5-9V6L12 3Z"/><path stroke-linecap="round" stroke-linejoin="round" d="m9.25 12 1.9 1.9 3.6-3.9"/></svg>
+        </div>
+        <h3 class="mt-5 font-display font-semibold text-base">Cited compliance checks</h3>
+        <p class="mt-2.5 text-sm text-muted leading-relaxed">Every verdict names the specific article or circular it's grounded in — retrieved from ingested RERA regulation text, not general legal knowledge.</p>
+      </div>
+
+      <div class="reveal rounded-2xl border border-white/10 bg-surface p-7 transition-all duration-300 hover:border-gold/30 hover:-translate-y-1" style="animation-delay:.35s">
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-gold/10">
+          <svg class="h-5 w-5 text-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.7"><path stroke-linecap="round" stroke-linejoin="round" d="M7 3.75h6.75L18.5 9v11.25a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4.75a1 1 0 0 1 1-1Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 3.75V9h5"/></svg>
+        </div>
+        <h3 class="mt-5 font-display font-semibold text-base">Client-ready reports</h3>
+        <p class="mt-2.5 text-sm text-muted leading-relaxed">Download a polished PDF with a full methodology section — every figure is traceable to how it was computed.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+{# ---------- FINAL CTA ---------- #}
+<section class="relative py-24 sm:py-32 border-t border-white/5 overflow-hidden">
+  <div class="pointer-events-none absolute left-1/2 top-1/2 h-96 w-[44rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-navy/40 blur-[120px]"></div>
+  <div class="relative max-w-2xl mx-auto px-5 sm:px-8 text-center">
+    <h2 class="reveal font-display font-bold text-3xl sm:text-4xl tracking-tight">Ready to see it in action?</h2>
+    <p class="reveal mt-4 text-muted" style="animation-delay:.08s">Sign in and run your first property scenario in under a minute.</p>
+    <div class="reveal mt-9" style="animation-delay:.16s">
+      {% if user.is_authenticated %}
+        <a href="{% url 'web:dashboard' %}"
+           class="inline-flex items-center gap-2 rounded-full bg-gold px-7 py-3.5 text-sm font-semibold text-canvas transition-all duration-200 hover:bg-gold-light hover:shadow-xl hover:shadow-gold/20 active:scale-[0.97]">
+          Go to Dashboard
+        </a>
+      {% else %}
+        <a href="{% provider_login_url 'google' next='/app/' %}"
+           class="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 text-sm font-semibold text-[#1F1F1F] shadow-lg transition-all duration-200 hover:shadow-xl active:scale-[0.97]">
+          {% include "web/_google_icon.html" %}
+          Sign in with Google
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+{# ---------- FOOTER ---------- #}
+<footer class="border-t border-white/5 py-10">
+  <div class="max-w-7xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-muted/70">
+    <div class="flex items-center gap-2">
+      <span class="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-gold to-gold-dark text-canvas font-display font-bold text-[11px]">D</span>
+      <span>Dubai RE Assistant</span>
+    </div>
+    <p class="text-center">Informational only — not financial, investment, or legal advice.</p>
+    <p>&copy; 2026 Dubai RE Assistant</p>
+  </div>
+</footer>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  (function () {
+    const toggle = document.getElementById('nav-toggle');
+    const menu = document.getElementById('mobile-menu');
+    const iconOpen = document.getElementById('nav-icon-open');
+    const iconClose = document.getElementById('nav-icon-close');
+    if (!toggle || !menu) return;
+    toggle.addEventListener('click', () => {
+      const isOpen = !menu.classList.contains('hidden');
+      menu.classList.toggle('hidden');
+      iconOpen.classList.toggle('hidden');
+      iconClose.classList.toggle('hidden');
+      toggle.setAttribute('aria-expanded', String(!isOpen));
+    });
+    menu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+      menu.classList.add('hidden');
+      iconOpen.classList.remove('hidden');
+      iconClose.classList.add('hidden');
+    }));
+  })();
+</script>
+{% endblock %}
