@@ -12,11 +12,13 @@ article or clause it's grounded in — never a bare yes/no answer.
 If retrieval finds nothing relevant, no LLM call is made and the verdict is
 "unclear" with an explanation, rather than letting the model guess ungrounded.
 """
+import hashlib
 import json
 import time
 from dataclasses import dataclass, field
 
 from django.conf import settings
+from django.core.cache import cache
 from google import genai
 from google.genai import errors, types
 
@@ -29,9 +31,26 @@ DEFAULT_TOP_K = 8
 # The reasoning call is isolated to get_client()/_generate_with_retry()/this
 # constant, so swapping in Claude (settings.ANTHROPIC_API_KEY + anthropic
 # SDK) later is a localized change, not a rewrite of the agent's logic.
-DEFAULT_MODEL = "gemini-3.6-flash"
-_MAX_RETRIES = 5
-_RETRY_BACKOFF_SECONDS = 20
+# gemini-3.6-flash's free-tier daily quota (20 requests/day) was getting
+# exhausted during dashboard testing. gemini-2.5-flash (and gemini-2.5-flash-lite)
+# are NOT viable alternatives — this project's API key gets a hard 404 "no
+# longer available to new users" on both, regardless of remaining quota.
+# gemini-3.1-flash-lite works and, as a lite variant, carries a materially
+# higher free-tier daily quota than the full flash models.
+DEFAULT_MODEL = "gemini-3.1-flash-lite"
+
+# Cache identical scenario checks so repeatedly testing the same input
+# doesn't burn free-tier daily quota on a fresh Gemini call every time. Keyed
+# on the exact scenario text + top_k + model, so anything that could change
+# the result invalidates the cache entry.
+CACHE_TIMEOUT_SECONDS = 60 * 60 * 24
+# This call sits in the request path of the dashboard's "Run Analysis" button —
+# unlike the batch ingestion pipeline's long backoff, a user is watching a
+# spinner, so retries here are few and short: retry on 429 (rate limit) and
+# 503 (transient overload) only, not on other errors.
+_MAX_RETRIES = 3
+_RETRY_BACKOFF_SECONDS = 2
+_RETRYABLE_CODES = {429, 503}
 
 REPORT_SCHEMA = {
     "type": "object",
@@ -124,16 +143,14 @@ def get_client():
 
 
 def _generate_with_retry(client, model, prompt, config):
-    """Call generate_content, retrying on 429 (rate limit) with backoff.
-
-    Mirrors apps.ingestion.embeddings._embed_batch_with_retry — same free-tier
-    rate-limit behavior applies to generate_content.
+    """Call generate_content, retrying on 429 (rate limit) and 503 (transient
+    overload) with a short backoff — see _MAX_RETRIES/_RETRY_BACKOFF_SECONDS.
     """
     for attempt in range(_MAX_RETRIES):
         try:
             return client.models.generate_content(model=model, contents=prompt, config=config)
-        except errors.ClientError as exc:
-            if exc.code != 429 or attempt == _MAX_RETRIES - 1:
+        except errors.APIError as exc:
+            if exc.code not in _RETRYABLE_CODES or attempt == _MAX_RETRIES - 1:
                 raise
             time.sleep(_RETRY_BACKOFF_SECONDS * (attempt + 1))
 
@@ -164,6 +181,20 @@ class ComplianceAgent:
         if not scenario:
             raise ValueError("scenario must be non-empty.")
 
+        cache_key = self._cache_key(scenario)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
+
+        assessment = self._check_uncached(scenario)
+        cache.set(cache_key, assessment, timeout=CACHE_TIMEOUT_SECONDS)
+        return assessment
+
+    def _cache_key(self, scenario):
+        digest = hashlib.sha256(scenario.encode("utf-8")).hexdigest()
+        return f"compliance:v1:{self.model}:{self.top_k}:{digest}"
+
+    def _check_uncached(self, scenario):
         chunks = self.retrieval_agent.retrieve(scenario, top_k=self.top_k)
         if not chunks:
             return ComplianceAssessment(
