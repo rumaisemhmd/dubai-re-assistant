@@ -14,6 +14,11 @@ from django.db.models.functions import ExtractYear
 
 from apps.ingestion.models import Rent, Transaction
 
+# DLD's ACTUAL_AREA column (Transaction and Rent) is in square meters, not
+# square feet, despite Dubai real-estate pricing convention being AED/sqft.
+# Divide a per-sqm figure by this to get per-sqft.
+SQM_PER_SQFT = 10.7639
+
 # Minimum comparable Sales transactions required before an average is trusted.
 MIN_SAMPLE_SIZE = 20
 # Minimum distinct calendar years (each meeting MIN_YEAR_SAMPLE_SIZE) required
@@ -127,7 +132,8 @@ class CalculationAgent:
                     f"least {self.min_sample_size} to report a confident average."
                 ),
             )
-        return PricePerSqft(available=True, value=float(stats["avg_ppsf"]), sample_size=n)
+        # stats["avg_ppsf"] is AED per square meter (see SQM_PER_SQFT); convert to AED/sqft.
+        return PricePerSqft(available=True, value=float(stats["avg_ppsf"]) / SQM_PER_SQFT, sample_size=n)
 
     def _rental_yield(self, area, property_type, price_per_sqft):
         rent_comparables = Rent.objects.filter(
@@ -164,7 +170,9 @@ class CalculationAgent:
                 ),
             )
 
-        avg_rent_ppsf = float(stats["avg_rent_ppsf"])
+        # stats["avg_rent_ppsf"] is AED per square meter (see SQM_PER_SQFT); convert to AED/sqft
+        # so it's in the same unit as price_per_sqft.value before taking the ratio.
+        avg_rent_ppsf = float(stats["avg_rent_ppsf"]) / SQM_PER_SQFT
         yield_pct = (avg_rent_ppsf / price_per_sqft.value) * 100
 
         return RentalYield(
