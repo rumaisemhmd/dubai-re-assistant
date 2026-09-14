@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Document, DocumentChunk, Transaction
+from .models import Document, DocumentChunk, Rent, Transaction
 
 
 @admin.register(Document)
@@ -22,3 +22,10 @@ class TransactionAdmin(admin.ModelAdmin):
     list_display = ("transaction_number", "area", "property_type", "transaction_value", "instance_date")
     list_filter = ("property_type", "is_offplan", "is_freehold", "area")
     search_fields = ("transaction_number", "area", "master_project", "project")
+
+
+@admin.register(Rent)
+class RentAdmin(admin.ModelAdmin):
+    list_display = ("area", "property_type", "annual_amount", "registration_date")
+    list_filter = ("property_type", "is_freehold", "area")
+    search_fields = ("area", "master_project", "project")

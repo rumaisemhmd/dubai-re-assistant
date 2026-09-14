@@ -1,17 +1,18 @@
 """Calculation agent: deterministic ROI/yield math over ingested DLD Transaction data.
 
-No LLM calls here — every figure is computed directly from Transaction rows
-with plain arithmetic (Avg/Count aggregates, simple compounding). Where the
-data can't support a confident estimate (too few comparable transactions, no
-rent data ingested, price history spanning too few years), the corresponding
-result is flagged as unavailable with a clear message instead of guessed.
+No LLM calls here — every figure is computed directly from Transaction and
+Rent rows with plain arithmetic (Avg/Count aggregates, simple compounding).
+Where the data can't support a confident estimate (too few comparable
+transactions or rent contracts, price history spanning too few years), the
+corresponding result is flagged as unavailable with a clear message instead
+of guessed.
 """
 from dataclasses import dataclass
 
 from django.db.models import Avg, Count, F
 from django.db.models.functions import ExtractYear
 
-from apps.ingestion.models import Transaction
+from apps.ingestion.models import Rent, Transaction
 
 # Minimum comparable Sales transactions required before an average is trusted.
 MIN_SAMPLE_SIZE = 20
@@ -33,6 +34,7 @@ class PricePerSqft:
 class RentalYield:
     available: bool
     value: float | None = None
+    sample_size: int = 0
     message: str = ""
 
 
@@ -98,7 +100,7 @@ class CalculationAgent:
         ).exclude(actual_area=0)
 
         price_per_sqft = self._price_per_sqft(comparables, area, property_type)
-        rental_yield = self._rental_yield(area, property_type)
+        rental_yield = self._rental_yield(area, property_type, price_per_sqft)
         roi = self._roi(comparables, area, property_type, purchase_price, years)
 
         return PropertyAnalysis(
@@ -127,25 +129,53 @@ class CalculationAgent:
             )
         return PricePerSqft(available=True, value=float(stats["avg_ppsf"]), sample_size=n)
 
-    def _rental_yield(self, area, property_type):
-        rent_groups_exist = (
-            Transaction.objects.filter(group__icontains="rent").exists()
-            or Transaction.objects.filter(procedure__icontains="rent").exists()
-        )
-        if not rent_groups_exist:
+    def _rental_yield(self, area, property_type, price_per_sqft):
+        rent_comparables = Rent.objects.filter(
+            area__iexact=area,
+            property_type__iexact=property_type,
+            annual_amount__isnull=False,
+            actual_area__isnull=False,
+        ).exclude(actual_area=0)
+
+        stats = rent_comparables.annotate(
+            rent_ppsf=F("annual_amount") / F("actual_area")
+        ).aggregate(avg_rent_ppsf=Avg("rent_ppsf"), n=Count("id"))
+        n = stats["n"] or 0
+
+        if n < self.min_sample_size:
             return RentalYield(
                 available=False,
+                sample_size=n,
                 message=(
-                    "No rent contract data has been ingested (the Transaction "
-                    "table currently holds only Sales/Mortgage/Gifts records) — "
-                    "rental yield cannot be estimated without it."
+                    f"Only {n} comparable rent contract(s) found for "
+                    f"area='{area}', property_type='{property_type}' — need at "
+                    f"least {self.min_sample_size} to report a confident yield."
                 ),
             )
-        # Rent data is present in the schema; a real yield calculation would
-        # go here (avg annual rent / avg sale price for comparable units).
+
+        if not price_per_sqft.available:
+            return RentalYield(
+                available=False,
+                sample_size=n,
+                message=(
+                    "Rental yield requires a confident sale price/sqft estimate "
+                    f"for area='{area}', property_type='{property_type}', which "
+                    "is unavailable (see price_per_sqft for why)."
+                ),
+            )
+
+        avg_rent_ppsf = float(stats["avg_rent_ppsf"])
+        yield_pct = (avg_rent_ppsf / price_per_sqft.value) * 100
+
         return RentalYield(
-            available=False,
-            message="Rent data is present but rental-yield calculation is not yet implemented.",
+            available=True,
+            value=yield_pct,
+            sample_size=n,
+            message=(
+                f"Based on {n} comparable rent contract(s): avg annual rent "
+                f"{avg_rent_ppsf:.0f}/sqft over avg sale price {price_per_sqft.value:.0f}/sqft "
+                f"({price_per_sqft.sample_size} comparable sale(s))."
+            ),
         )
 
     def _roi(self, comparables, area, property_type, purchase_price, years):
